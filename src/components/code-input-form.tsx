@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
 import { handleGenerateTests, FormState } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -8,16 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-const initialState: FormState = {
-  data: null,
-  error: null,
-};
-
 interface CodeInputFormProps {
-  onGenerationComplete: (state: FormState) => void;
+  state: FormState;
+  onAction: (state: FormState) => void;
   setIsLoading: (isLoading: boolean) => void;
 }
 
@@ -31,28 +27,27 @@ function SubmitButton() {
   );
 }
 
-export function CodeInputForm({ onGenerationComplete, setIsLoading }: CodeInputFormProps) {
+export function CodeInputForm({ state, onAction, setIsLoading }: CodeInputFormProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [state, formAction] = useFormState(handleGenerateTests, initialState);
-  const { pending } = useFormStatus();
+  const [formState, formAction, isPending] = useActionState(handleGenerateTests, state);
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoading(pending);
-  }, [pending, setIsLoading]);
+    setIsLoading(isPending);
+  }, [isPending, setIsLoading]);
   
   useEffect(() => {
-    if (!pending && state) {
-      onGenerationComplete(state);
-      if (state.error) {
+    if (formState) {
+      onAction(formState);
+      if (formState.error) {
         toast({
           variant: 'destructive',
           title: 'Validation Error',
-          description: state.error,
+          description: formState.error,
         });
       }
     }
-  }, [state, pending, onGenerationComplete, toast]);
+  }, [formState, onAction, toast]);
 
   return (
     <form action={formAction}>
